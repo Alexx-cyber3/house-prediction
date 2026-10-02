@@ -1,0 +1,9 @@
+# USA Housing Price Prediction Dashboard - Dependencies
+Flask==3.0.0
+pandas==2.3.3
+numpy==2.2.6
+scikit-learn==1.8.0
+matplotlib==3.10.7
+seaborn==0.13.2
+requests==2.31.0
+jupyterlab==4.6.4

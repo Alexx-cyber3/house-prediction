@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Upload Results</title>
+<style>
+  body { background: #f0f4f8; font-family: 'Segoe UI', Arial, sans-serif; color: #2d3748; }
+  .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+  .card { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  h1 { font-size: 20px; color: #276749; margin-bottom: 6px; }
+  a.button { display: inline-block; margin: 12px 12px 12px 0; padding: 10px 18px; background: #2f855a; color: white; border-radius: 6px; text-decoration: none; }
+  a.button.secondary { background: #4a5568; }
+  .table-wrap { overflow-x: auto; margin-top: 16px; }
+  table.data { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.data th, table.data td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: right; }
+  table.data th { background: #2f855a; color: white; }
+  table.data tr:nth-child(even) { background: #f7fafc; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <h1>Prediction Results</h1>
+    <p>Showing first {{ shown }} of {{ total }} rows.</p>
+    <a class="button" href="/download">⬇ Download Full CSV</a>
+    <a class="button secondary" href="/">← Back to Dashboard</a>
+    <div class="table-wrap">
+      {% for table in tables %}{{ table|safe }}{% endfor %}
+    </div>
+  </div>
+</div>
+</body>
+</html>

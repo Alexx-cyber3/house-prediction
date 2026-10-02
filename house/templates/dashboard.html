@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USA Housing Price Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+  body { background: #f0f4f8; color: #2d3748; }
+  header { background: #2f855a; color: white; padding: 20px 40px; }
+  header h1 { font-size: 24px; }
+  header p { opacity: 0.9; font-size: 14px; margin-top: 4px; }
+  .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .card { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 18px; margin-bottom: 16px; color: #276749; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; color: #4a5568; }
+  input { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+  input:focus { outline: none; border-color: #2f855a; }
+  button { margin-top: 18px; width: 100%; padding: 12px; background: #2f855a; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+  button:hover { background: #276749; }
+  .result { margin-top: 18px; padding: 16px; border-radius: 8px; background: #f0fff4; border: 1px solid #9ae6b4; font-size: 22px; font-weight: 700; color: #22543d; text-align: center; }
+  .error { margin-top: 18px; padding: 12px; border-radius: 8px; background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; }
+  .stat-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+  .stat-row span:last-child { font-weight: 700; }
+  .coef-bar { background: #e2e8f0; border-radius: 4px; height: 10px; margin: 4px 0 10px; }
+  .coef-fill { background: #2f855a; height: 100%; border-radius: 4px; }
+  .hint { font-size: 12px; color: #718096; margin-top: 2px; }
+  footer { text-align: center; padding: 20px; color: #718096; font-size: 12px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 USA Housing Price Prediction Dashboard</h1>
+  <p>Linear Regression model trained on 5,000 US housing records</p>
+</header>
+<div class="container">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}<div class="error" style="margin-bottom:20px;">{{ m }}</div>{% endfor %}
+    {% endif %}
+  {% endwith %}
+  <div class="grid">
+    <div class="card">
+      <h2>Predict a House Price</h2>
+      <form method="POST" action="/">
+        {% for f in features %}
+        <label for="{{ f }}">{{ f }}</label>
+        <input type="number" step="any" name="{{ f }}" id="{{ f }}" required
+               placeholder="e.g. {{ stats.feature_stats[f].mean }}"
+               value="{{ inputs[f] if inputs else '' }}">
+        <div class="hint">Typical range: {{ stats.feature_stats[f].min }} – {{ stats.feature_stats[f].max }} (avg {{ stats.feature_stats[f].mean }})</div>
+        {% endfor %}
+        <button type="submit">Predict Price</button>
+      </form>
+      {% if prediction is not none %}
+      <div class="result">Estimated Price: ${{ "{:,.0f}".format(prediction) }}</div>
+      {% endif %}
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom: 20px;">
+        <h2>Model Performance</h2>
+        <div class="stat-row"><span>R² Score</span><span>{{ stats.r2 }}</span></div>
+        <div class="stat-row"><span>RMSE</span><span>${{ "{:,.0f}".format(stats.rmse) }}</span></div>
+        <div class="stat-row"><span>Intercept</span><span>${{ "{:,.0f}".format(stats.intercept) }}</span></div>
+        <div class="stat-row"><span>Training samples</span><span>{{ stats.train_size }}</span></div>
+        <div class="stat-row"><span>Test samples</span><span>{{ stats.test_size }}</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Feature Coefficients (scaled)</h2>
+        {% set max_coef = stats.coefficients.values() | max %}
+        {% for f, c in stats.coefficients.items() %}
+        <div class="stat-row" style="border-bottom: none; padding-bottom: 2px;"><span>{{ f }}</span><span>${{ "{:,.0f}".format(c) }}</span></div>
+        <div class="coef-bar"><div class="coef-fill" style="width: {{ (c / max_coef * 100) | round(1) }}%"></div></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <h2>Actual vs Predicted Prices (test set)</h2>
+    <img src="data:image/png;base64,{{ scatter_plot }}" alt="Actual vs Predicted" style="max-width:100%;">
+  </div>
+
+  <div class="card" style="margin-top: 20px;">
+    <h2>Upload New Data (CSV)</h2>
+    <p style="font-size:13px; color:#718096; margin-bottom:10px;">
+      Upload a CSV with columns: {{ features | join(', ') }}. The model will predict prices for every row.
+    </p>
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".csv" required>
+      <button type="submit">Upload &amp; Predict</button>
+    </form>
+  </div>
+</div>
+<footer>Built with Flask &amp; scikit-learn Linear Regression</footer>
+</body>
+</html>
